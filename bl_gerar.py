@@ -98,7 +98,7 @@ def load_font(key: str, size: int):
     if font is None:
         print(
             f"AVISO: fonte '{key}' nao encontrada. "
-            f"Copie os TTF/OTF para {_SCRIPT_DIR / 'fonts'}\\",
+            f"Copie os TTF/OTF para {_SCRIPT_DIR / 'fonts'}",
             file=sys.stderr,
         )
         font = ImageFont.load_default()
@@ -511,6 +511,14 @@ def main():
         if key not in campanha:
             print(f"Erro: chave obrigatoria ausente no JSON: '{key}'", file=sys.stderr)
             sys.exit(1)
+
+    if not isinstance(campanha["copy"], dict):
+        print("Erro: 'copy' deve ser um objeto JSON.", file=sys.stderr)
+        sys.exit(1)
+
+    if not isinstance(campanha["formatos"], list):
+        print("Erro: 'formatos' deve ser uma lista JSON.", file=sys.stderr)
+        sys.exit(1)
 
     missing_copy = _REQUIRED_COPY_KEYS - set(campanha["copy"].keys())
     if missing_copy:
