@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #0D0D0D;
+    color: #F0EDE8;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #111111;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2a2a2a;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #3a3a3a;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-bl-card border border-bl-border rounded-lg;
+  }
+
+  .card-2 {
+    @apply bg-bl-card-2 border border-bl-border rounded-lg;
+  }
+
+  .input-field {
+    @apply w-full bg-bl-bg border border-bl-border rounded-lg px-3 py-2.5
+           text-bl-text placeholder-bl-muted text-sm
+           focus:outline-none focus:border-bl-gold focus:ring-1 focus:ring-bl-gold/30
+           transition-colors duration-150;
+  }
+
+  .label {
+    @apply block text-xs font-medium text-bl-muted uppercase tracking-widest mb-1.5;
+  }
+
+  .btn-gold {
+    @apply w-full py-3.5 bg-bl-gold text-black font-semibold text-sm tracking-wider uppercase
+           rounded-lg transition-all duration-150
+           hover:bg-bl-gold-2 active:scale-[0.98]
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100;
+  }
+}
