@@ -42,172 +42,6 @@ function Field({
   )
 }
 
-function StatusBadge({ status, erro }: { status: Status; erro: string | null }) {
-  if (status === 'idle') return null
-
-  const config = {
-    gerando: {
-      bg: 'bg-bl-gold/10 border-bl-gold/30',
-      dot: 'bg-bl-gold animate-pulse',
-      text: 'text-bl-gold',
-      label: 'Gerando...',
-    },
-    concluido: {
-      bg: 'bg-emerald-500/10 border-emerald-500/30',
-      dot: 'bg-emerald-500',
-      text: 'text-emerald-400',
-      label: 'Concluído',
-    },
-    erro: {
-      bg: 'bg-red-500/10 border-red-500/30',
-      dot: 'bg-red-500',
-      text: 'text-red-400',
-      label: erro || 'Erro na geração',
-    },
-  }[status]
-
-  return (
-    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm ${config.bg}`}>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${config.dot}`} />
-      <span className={`font-medium ${config.text}`}>{config.label}</span>
-    </div>
-  )
-}
-
-function LivePreview({
-  previewUrl,
-  copy,
-  formato,
-  hasImage,
-}: {
-  previewUrl: string | null
-  copy: CopyFields
-  formato: 'feed' | 'story'
-  hasImage: boolean
-}) {
-  const isStory = formato === 'story'
-  const aspectClass = isStory ? 'aspect-[9/16]' : 'aspect-square'
-
-  const corpoLines = copy.corpo.split('\n').filter((l) => l.trim())
-
-  return (
-    <div
-      className={`relative overflow-hidden rounded-lg w-full ${aspectClass} bg-gray-900`}
-      style={{
-        backgroundImage: previewUrl ? `url(${previewUrl})` : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/65" />
-
-      {/* Content */}
-      <div className="absolute inset-0 flex flex-col p-4 gap-2 overflow-hidden">
-        {/* Tag */}
-        {copy.tag && (
-          <div className="inline-flex">
-            <span
-              className="text-[9px] font-mono px-2 py-1 rounded"
-              style={{ background: '#0D0D0D', color: '#C69A3B' }}
-            >
-              {copy.tag}
-            </span>
-          </div>
-        )}
-
-        {/* Linha 1 */}
-        {copy.linha1 && (
-          <h2
-            className="font-bold leading-tight text-white"
-            style={{ fontSize: isStory ? '14px' : '16px', textShadow: '2px 2px 0 #000' }}
-          >
-            {copy.linha1}
-          </h2>
-        )}
-
-        {/* Bloco Vermelho */}
-        {copy.bloco_vermelho && (
-          <div
-            className="text-white font-bold text-center py-1.5 px-2 rounded text-xs"
-            style={{ background: '#BE1919' }}
-          >
-            {copy.bloco_vermelho}
-          </div>
-        )}
-
-        {/* Bloco Dourado */}
-        {copy.bloco_dourado && (
-          <div
-            className="font-bold text-xs py-1 px-2 rounded inline-flex"
-            style={{ background: '#C69A3B', color: '#0D0D0D' }}
-          >
-            {copy.bloco_dourado}
-          </div>
-        )}
-
-        {/* Divider */}
-        {(copy.bloco_dourado || copy.bloco_vermelho) && corpoLines.length > 0 && (
-          <div className="h-px w-full" style={{ background: '#2a2a2a' }} />
-        )}
-
-        {/* Corpo */}
-        {corpoLines.length > 0 && (
-          <div className="flex flex-col gap-0.5">
-            {corpoLines.slice(0, 4).map((line, i) => (
-              <p key={i} className="text-gray-300 leading-snug" style={{ fontSize: '9px' }}>
-                {line}
-              </p>
-            ))}
-          </div>
-        )}
-
-        {/* CTA */}
-        {copy.cta && (
-          <div
-            className="font-mono text-[9px] px-2 py-1 rounded inline-flex mt-auto"
-            style={{ background: '#0D0D0D', color: '#C69A3B' }}
-          >
-            {copy.cta}
-          </div>
-        )}
-
-        {/* Watermark */}
-        <div
-          className="text-center font-mono mt-auto"
-          style={{ fontSize: '7px', color: '#666' }}
-        >
-          @blackline.mkt
-        </div>
-      </div>
-
-      {/* Empty state overlay */}
-      {!hasImage && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-bl-muted mb-1" style={{ fontSize: '28px' }}>
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#666"
-                strokeWidth="1.5"
-                className="mx-auto"
-              >
-                <rect x="3" y="3" width="18" height="18" rx="2" />
-                <circle cx="8.5" cy="8.5" r="1.5" />
-                <polyline points="21 15 16 10 5 21" />
-              </svg>
-            </div>
-            <p className="text-bl-muted text-xs">Sem imagem</p>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function NovaCampanha() {
@@ -220,7 +54,7 @@ export default function NovaCampanha() {
   const [gerados, setGerados] = useState<GeradoFile[]>([])
   const [erro, setErro] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
-  const [previewFormato, setPreviewFormato] = useState<'feed' | 'story'>('feed')
+  const [layout, setLayout] = useState('padrao')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -249,14 +83,7 @@ export default function NovaCampanha() {
   ) => setCopy((prev) => ({ ...prev, [field]: e.target.value }))
 
   const toggleFormato = (fmt: 'feed' | 'story') => {
-    setFormatos((prev) => {
-      const next = { ...prev, [fmt]: !prev[fmt] }
-      // Sync preview tab
-      if (!next[fmt] && previewFormato === fmt) {
-        setPreviewFormato(fmt === 'feed' ? 'story' : 'feed')
-      }
-      return next
-    })
+    setFormatos((prev) => ({ ...prev, [fmt]: !prev[fmt] }))
   }
 
   const handleGenerate = async () => {
@@ -274,6 +101,7 @@ export default function NovaCampanha() {
     const dados = {
       nome: nome.trim(),
       formatos: selectedFormatos,
+      layout,
       copy: { ...copy, corpo: corpoLines },
     }
 
@@ -298,6 +126,15 @@ export default function NovaCampanha() {
       setErro(err instanceof Error ? err.message : 'Erro na geração.')
       setStatus('erro')
     }
+  }
+
+  const downloadAll = () => {
+    gerados.forEach((g) => {
+      const a = document.createElement('a')
+      a.href = `/api/download/${g.arquivo}`
+      a.download = g.arquivo
+      a.click()
+    })
   }
 
   const isGenerating = status === 'gerando'
@@ -518,107 +355,197 @@ export default function NovaCampanha() {
             </Field>
           </div>
 
-          {/* Status + Generate */}
-          <div className="flex flex-col gap-3 pb-2">
-            <StatusBadge status={status} erro={erro} />
-            <button
-              className="btn-gold"
-              onClick={handleGenerate}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  Gerando...
-                </span>
-              ) : (
-                'GERAR CRIATIVOS'
-              )}
-            </button>
+          {/* Layout selection */}
+          <div className="card p-5 flex flex-col gap-3">
+            <h3 className="text-xs font-semibold text-bl-muted uppercase tracking-widest">
+              Layout
+            </h3>
+            {([
+              {
+                key: 'padrao',
+                label: 'Padrão',
+                desc: 'Bloco vermelho + bloco dourado',
+                accent: '#BE1919',
+                accent2: '#C69A3B',
+              },
+              {
+                key: 'vermelho_dominante',
+                label: 'Vermelho dominante',
+                desc: 'Dois blocos vermelhos, sem dourado',
+                accent: '#BE1919',
+                accent2: '#BE1919',
+              },
+              {
+                key: 'dourado_dominante',
+                label: 'Dourado dominante',
+                desc: 'Headline em dourado, impacto em texto vermelho',
+                accent: '#C69A3B',
+                accent2: '#C69A3B',
+              },
+              {
+                key: 'minimalista',
+                label: 'Minimalista',
+                desc: 'Só tipografia — sem blocos coloridos',
+                accent: '#666666',
+                accent2: '#666666',
+              },
+            ] as const).map(({ key, label, desc, accent, accent2 }) => {
+              const active = layout === key
+              return (
+                <button
+                  key={key}
+                  onClick={() => !isGenerating && setLayout(key)}
+                  className={[
+                    'flex items-center gap-3 p-3 rounded-lg border text-left transition-all duration-150',
+                    active
+                      ? 'border-bl-gold bg-bl-gold/8 text-bl-text'
+                      : 'border-bl-border bg-bl-bg text-bl-muted hover:border-bl-muted hover:text-bl-text',
+                  ].join(' ')}
+                >
+                  {/* Radio dot */}
+                  <span
+                    className={[
+                      'flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors',
+                      active ? 'border-bl-gold' : 'border-bl-muted',
+                    ].join(' ')}
+                  >
+                    {active && (
+                      <span className="w-2 h-2 rounded-full bg-bl-gold" />
+                    )}
+                  </span>
+                  {/* Color preview dots */}
+                  <span className="flex gap-1 flex-shrink-0">
+                    <span
+                      className="w-2.5 h-2.5 rounded-sm"
+                      style={{ background: accent }}
+                    />
+                    <span
+                      className="w-2.5 h-2.5 rounded-sm"
+                      style={{ background: accent2 }}
+                    />
+                  </span>
+                  {/* Text */}
+                  <span className="flex flex-col min-w-0">
+                    <span className={`text-xs font-medium ${active ? 'text-bl-text' : ''}`}>
+                      {label}
+                    </span>
+                    <span className="text-[10px] text-bl-muted leading-tight mt-0.5">
+                      {desc}
+                    </span>
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
-        {/* ── Right: Preview + Downloads ───────────────────────────── */}
+        {/* ── Right: Preview ───────────────────────────── */}
         <div
-          className="w-72 xl:w-80 flex-shrink-0 border-l border-bl-border overflow-y-auto px-5 py-6 flex flex-col gap-5"
+          className="w-72 xl:w-80 flex-shrink-0 border-l border-bl-border overflow-y-auto px-5 py-6 flex flex-col gap-4"
           style={{ background: '#0a0a0a' }}
         >
-          {/* Preview header + format tabs */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium text-bl-muted uppercase tracking-widest">
-                Preview
+          {/* GERAR PREVIEW button */}
+          <button
+            className="btn-gold"
+            onClick={handleGenerate}
+            disabled={isGenerating}
+          >
+            {isGenerating ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Gerando...
               </span>
-              <div className="flex gap-1">
-                {(['feed', 'story'] as const).map((fmt) => (
-                  <button
-                    key={fmt}
-                    onClick={() => setPreviewFormato(fmt)}
-                    className={[
-                      'px-2.5 py-1 text-xs rounded font-mono transition-colors',
-                      previewFormato === fmt
-                        ? 'bg-bl-gold text-black'
-                        : 'text-bl-muted hover:text-bl-text',
-                    ].join(' ')}
-                  >
-                    {fmt}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <LivePreview
-              previewUrl={previewUrl}
-              copy={copy}
-              formato={previewFormato}
-              hasImage={hasImage}
-            />
-            <p className="text-[10px] text-bl-muted text-center mt-2 font-mono">
-              Preview aproximado — resultado final gerado pelo Python
-            </p>
-          </div>
+            ) : (
+              'GERAR PREVIEW'
+            )}
+          </button>
 
-          {/* Generated files */}
-          {gerados.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-medium text-bl-muted uppercase tracking-widest">
-                  Arquivos Gerados
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              </div>
-              <div className="flex flex-col gap-2">
-                {gerados.map((g) => {
-                  const label = g.formato === 'feed' ? '1080 × 1080' : '1080 × 1920'
-                  const badgeColor = g.formato === 'feed' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' : 'text-purple-400 bg-purple-500/10 border-purple-500/20'
-                  return (
-                    <div
-                      key={g.arquivo}
-                      className="card-2 p-3 flex items-center justify-between gap-3"
-                    >
-                      <div className="flex flex-col gap-1 min-w-0">
-                        <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border uppercase self-start ${badgeColor}`}>
-                          {g.formato}
-                        </span>
-                        <span className="text-[10px] text-bl-muted font-mono">{label}</span>
-                      </div>
-                      <a
-                        href={`/api/download/${g.arquivo}`}
-                        download={g.arquivo}
-                        className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-bl-gold border border-bl-gold/30 hover:bg-bl-gold/10 transition-colors"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                          <polyline points="7 10 12 15 17 10" />
-                          <line x1="12" y1="15" x2="12" y2="3" />
-                        </svg>
-                        PNG
-                      </a>
-                    </div>
-                  )
-                })}
-              </div>
+          {/* idle */}
+          {status === 'idle' && (
+            <div
+              className="flex flex-col items-center justify-center gap-3 rounded-lg border border-bl-border"
+              style={{ minHeight: '220px', background: '#0D0D0D' }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" strokeWidth="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              <p className="text-xs text-bl-muted text-center px-4 leading-relaxed">
+                Preencha os campos e clique em<br />
+                <span className="text-bl-gold">Gerar Preview</span>
+              </p>
+            </div>
+          )}
+
+          {/* gerando */}
+          {status === 'gerando' && (
+            <div
+              className="flex flex-col items-center justify-center gap-3 rounded-lg border border-bl-border"
+              style={{ minHeight: '220px', background: '#0D0D0D' }}
+            >
+              <svg className="animate-spin" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C69A3B" strokeWidth="2">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+              </svg>
+              <p className="text-xs text-bl-muted">Gerando criativos...</p>
+            </div>
+          )}
+
+          {/* erro */}
+          {status === 'erro' && (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 mt-0.5">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {erro}
+            </div>
+          )}
+
+          {/* concluido */}
+          {status === 'concluido' && gerados.length > 0 && (
+            <div className="flex flex-col gap-5">
+              {gerados.map((g) => (
+                <div key={g.arquivo} className="flex flex-col gap-2">
+                  <span className="text-[10px] font-mono text-bl-muted uppercase tracking-widest">
+                    {g.formato === 'feed' ? 'Feed — 1080 × 1080' : 'Story — 1080 × 1920'}
+                  </span>
+                  <img
+                    src={`/api/download/${g.arquivo}`}
+                    alt={g.formato}
+                    className="w-full rounded border border-bl-border"
+                  />
+                  <a
+                    href={`/api/download/${g.arquivo}`}
+                    download={g.arquivo}
+                    className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-bl-gold border border-bl-gold/30 hover:bg-bl-gold/10 transition-colors"
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    Baixar {g.formato === 'feed' ? 'Feed' : 'Story'}
+                  </a>
+                </div>
+              ))}
+
+              {gerados.length > 1 && (
+                <button
+                  onClick={downloadAll}
+                  className="flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-bl-text border border-bl-border hover:border-bl-gold/40 hover:text-bl-gold transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  BAIXAR TODOS
+                </button>
+              )}
             </div>
           )}
         </div>

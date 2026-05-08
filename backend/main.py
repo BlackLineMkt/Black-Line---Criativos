@@ -2,6 +2,7 @@ import sys
 import json
 import uuid
 import tempfile
+import traceback
 from pathlib import Path
 from datetime import datetime
 
@@ -61,9 +62,9 @@ async def gerar(
     imagem: UploadFile = File(...),
     dados: str = Form(...),
 ):
-    # Parse request data
+    # Parse request data — force UTF-8 to avoid Windows cp1252 mis-decoding
     try:
-        dados_dict = json.loads(dados)
+        dados_dict = json.loads(dados.encode('utf-8').decode('utf-8'))
     except json.JSONDecodeError:
         raise HTTPException(status_code=400, detail="'dados' não é um JSON válido.")
 
@@ -90,15 +91,22 @@ async def gerar(
     tmp_path.write_bytes(content)
 
     try:
+        copy_payload = dados_dict["copy"]
+        # Ensure corpo is always a list, not a raw string
+        if isinstance(copy_payload.get("corpo"), str):
+            copy_payload["corpo"] = [l for l in copy_payload["corpo"].split("\n") if l.strip()]
         campanha = {
             "nome": dados_dict["nome"],
             "imagem": str(tmp_path),
             "formatos": dados_dict["formatos"],
-            "copy": dados_dict["copy"],
+            "copy": copy_payload,
+            "layout": dados_dict.get("layout", "padrao"),
         }
         gerados = await run_in_threadpool(_render_sync, campanha, dados_dict["formatos"])
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Erro na geração: {exc}")
+        tb = traceback.format_exc()
+        print(f"\n[ERRO /gerar] {repr(exc)}\n{tb}", file=sys.stderr, flush=True)
+        raise HTTPException(status_code=500, detail=f"Erro na geração: {exc!r}")
     finally:
         tmp_path.unlink(missing_ok=True)
 

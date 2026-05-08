@@ -1,19 +1,40 @@
+# -*- coding: utf-8 -*-
 """
 Black Line Agency -- Gerador de Criativos INK RIOT
 Uso: python bl_gerar.py campanha.json
 """
 import sys
+import io
 import os
 import json
 import math
 import random
+import platform
 from pathlib import Path
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 try:
     from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont
 except ImportError:
     print("Pillow nao encontrado. Instale com:  pip install Pillow", file=sys.stderr)
     sys.exit(1)
+
+if platform.system() == "Windows":
+    _impact  = Path("C:/Windows/Fonts/impact.ttf")
+    _arialbd = Path("C:/Windows/Fonts/arialbd.ttf")
+    FONT_DISPLAY = str(_impact if _impact.exists() else _arialbd)
+    FONT_BOLD    = "C:/Windows/Fonts/arialbd.ttf"
+    FONT_MED     = "C:/Windows/Fonts/arial.ttf"
+    FONT_MONO    = "C:/Windows/Fonts/cour.ttf"
+    FONT_MONOB   = "C:/Windows/Fonts/courbd.ttf"
+else:
+    FONT_DISPLAY = "/usr/share/fonts/opentype/urw-base35/NimbusRoman-Bold.otf"
+    FONT_BOLD    = "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf"
+    FONT_MED     = "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf"
+    FONT_MONO    = "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf"
+    FONT_MONOB   = "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf"
 
 # ── SECTION 1: CONSTANTS ─────────────────────────────────────────────────────
 
@@ -32,13 +53,13 @@ FORMATS = {
 }
 
 FONT_SIZES = {
-    "tag":            17,
-    "linha1_feed":   112,   "linha1_story":   96,
-    "bloco_vm_feed": 118,   "bloco_vm_story": 100,
-    "bloco_do_feed": 108,   "bloco_do_story":  90,
-    "corpo_feed":     26,   "corpo_story":     30,
-    "cta_feed":       28,   "cta_story":       32,
-    "watermark":      20,
+    "tag":            22,
+    "linha1_feed":   128,   "linha1_story":  128,
+    "bloco_vm_feed": 136,   "bloco_vm_story": 136,
+    "bloco_do_feed": 120,   "bloco_do_story": 120,
+    "corpo_feed":     30,   "corpo_story":     30,
+    "cta_feed":       26,   "cta_story":       26,
+    "watermark":      22,
 }
 
 # ── SECTION 2: FONT LOADER ───────────────────────────────────────────────────
@@ -48,24 +69,29 @@ _SCRIPT_DIR = Path(__file__).parent
 _FONT_SEARCH: dict = {
     "nimbus": [
         "fonts/NimbusRoman-Bold.otf",
+        FONT_DISPLAY,
         "/usr/share/fonts/opentype/urw-base35/NimbusRoman-Bold.otf",
     ],
     "poppins_bold": [
         "fonts/Poppins-Bold.ttf",
+        FONT_BOLD,
         "/usr/share/fonts/truetype/google-fonts/Poppins-Bold.ttf",
         "/usr/share/fonts/truetype/poppins/Poppins-Bold.ttf",
     ],
     "poppins_medium": [
         "fonts/Poppins-Medium.ttf",
+        FONT_MED,
         "/usr/share/fonts/truetype/google-fonts/Poppins-Medium.ttf",
         "/usr/share/fonts/truetype/poppins/Poppins-Medium.ttf",
     ],
     "mono_bold": [
         "fonts/LiberationMono-Bold.ttf",
+        FONT_MONOB,
         "/usr/share/fonts/truetype/liberation/LiberationMono-Bold.ttf",
     ],
     "mono_regular": [
         "fonts/LiberationMono-Regular.ttf",
+        FONT_MONO,
         "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
     ],
 }
@@ -75,10 +101,7 @@ _font_cache: dict = {}
 
 def _resolve_font_path(key: str):
     for candidate in _FONT_SEARCH.get(key, []):
-        if not candidate.startswith("/"):
-            p = _SCRIPT_DIR / candidate
-        else:
-            p = Path(candidate)
+        p = Path(candidate) if Path(candidate).is_absolute() else _SCRIPT_DIR / candidate
         if p.exists():
             return p
     return None
@@ -132,13 +155,13 @@ def _apply_gradient(
 def process_background(src_path: str, w: int, h: int, seed: int = 42) -> Image.Image:
     """Loads, processes, and returns an RGBA image ready for compositing."""
     img = Image.open(src_path).convert("RGB").resize((w, h), Image.LANCZOS)
-    img = ImageEnhance.Contrast(img).enhance(1.9)
-    img = ImageEnhance.Brightness(img).enhance(0.6)
-    img = ImageEnhance.Color(img).enhance(0.5)
+    img = ImageEnhance.Contrast(img).enhance(1.5)
+    img = ImageEnhance.Brightness(img).enhance(0.85)
+    img = ImageEnhance.Color(img).enhance(0.75)
     img = img.filter(ImageFilter.SHARPEN)
     img = img.convert("RGBA")
-    _apply_gradient(img, 0, min(500, h), 210, 0)
-    _apply_gradient(img, max(0, h - 300), h, 0, 200)
+    _apply_gradient(img, 0, min(380, h), 140, 0)
+    _apply_gradient(img, max(0, h - 200), h, 0, 130)
     rng = random.Random(seed)
     for _ in range(35000):
         px = rng.randint(0, w - 1)
@@ -285,14 +308,134 @@ def draw_corpo(
     step = int(font_h * line_height_factor)
     current_y = y
     for line in lines:
-        brightness = sample_brightness(canvas, x, current_y, max_w, step)
-        color = BRANCO_QUENTE if brightness < 0.45 else CREME
-        draw.text((x, current_y), line, font=font, fill=color)
-        current_y += step
+        for wline in wrap_text(line, font, max_w):
+            brightness = sample_brightness(canvas, x, current_y, max_w, step)
+            color = BRANCO_QUENTE if brightness < 0.45 else CREME
+            for dx, dy in ((-3, 0), (3, 0), (0, -3), (0, 3)):
+                draw.text((x + dx, current_y + dy), wline, font=font, fill=PRETO)
+            draw.text((x, current_y), wline, font=font, fill=color)
+            current_y += step
     return current_y
 
 
-# ── SECTION 6: FEED COMPOSITOR ───────────────────────────────────────────────
+def fit_font(draw: ImageDraw.ImageDraw, text: str, font_path: str,
+             max_size: int, max_width: int):
+    """
+    Returns the largest FreeTypeFont at or below max_size where text fits
+    within max_width pixels. Steps down by 2px until it fits.
+    Falls back to ImageFont.load_default() if the path is unusable.
+    """
+    if not font_path:
+        return ImageFont.load_default()
+    size = max_size
+    while size > 8:
+        try:
+            font = ImageFont.truetype(font_path, size)
+        except OSError:
+            return ImageFont.load_default()
+        try:
+            w = draw.textbbox((0, 0), text, font=font)[2]
+        except Exception:
+            return font
+        if w <= max_width:
+            return font
+        size -= 2
+    try:
+        return ImageFont.truetype(font_path, max(8, size))
+    except OSError:
+        return ImageFont.load_default()
+
+
+# ── SECTION 6: LAYOUT BLOCKS HELPER ─────────────────────────────────────────
+
+def _draw_color_blocks(
+    draw: ImageDraw.ImageDraw,
+    copy: dict,
+    layout: str,
+    W: int,
+    MX: int,
+    y: int,
+    f_nimbus_r,
+    f_nimbus_d,
+    gap1: int = 20,
+    gap2: int = 22,
+) -> int:
+    """
+    Renders the layout-specific color blocks (items [4] and [5]).
+    Block heights are computed dynamically from wrapped line counts (24px pad each side).
+    Returns updated y after all blocks.
+    """
+
+    def _full_red_block(y0: int) -> int:
+        """Full-width red torn_block with drips/splatters. Returns y after block."""
+        wrapped = wrap_text(copy["bloco_vermelho"], f_nimbus_r, W - 2 * MX)
+        row_h = int(measure_text("Ag", f_nimbus_r)[1] * 1.15)
+        blk_h = len(wrapped) * row_h + 48
+        torn_block(draw, 0, y0, W, blk_h, VERMELHO, seed=3)
+        drip(draw, MX,     y0, 65, VERMELHO, w=4)
+        drip(draw, W - MX, y0, 50, VERMELHO, w=3)
+        splatter(draw, cx=28,     cy=y0 + blk_h // 2, color=VERMELHO + (175,),
+                 n=40, seed=4, max_dist=48)
+        splatter(draw, cx=W - 28, cy=y0 + blk_h // 2, color=VERMELHO + (175,),
+                 n=40, seed=5, max_dist=48)
+        ty = y0 + 24
+        for wline in wrapped:
+            tw = measure_text(wline, f_nimbus_r)[0]
+            stamp(draw, wline, f_nimbus_r, (W - tw) // 2, ty,
+                  color=BRANCO_QUENTE, shadow_color=(120, 10, 10), offset=3)
+            ty += row_h
+        return y0 + blk_h + gap1
+
+    def _partial_gold_block(y0: int) -> int:
+        """Partial-width gold torn_block. Returns y after block."""
+        do_tw, do_th = measure_text(copy["bloco_dourado"], f_nimbus_d)
+        blk_h = do_th + 48
+        torn_block(draw, MX, y0, do_tw + 52, blk_h, DOURADO, seed=6)
+        stamp(draw, copy["bloco_dourado"], f_nimbus_d, MX + 26, y0 + 24,
+              color=PRETO, shadow_color=(100, 75, 20), offset=2)
+        splatter(draw, cx=MX + do_tw + 52, cy=y0 + blk_h // 2,
+                 color=DOURADO + (200,), n=35, seed=7, max_dist=58)
+        return y0 + blk_h + gap2
+
+    def _partial_red_block(y0: int) -> int:
+        """Partial-width second red torn_block (vermelho_dominante). Returns y after block."""
+        do_tw, do_th = measure_text(copy["bloco_dourado"], f_nimbus_d)
+        blk_h = do_th + 48
+        torn_block(draw, MX, y0, do_tw + 52, blk_h, VERMELHO, seed=6)
+        stamp(draw, copy["bloco_dourado"], f_nimbus_d, MX + 26, y0 + 24,
+              color=BRANCO_QUENTE, shadow_color=(120, 10, 10), offset=2)
+        splatter(draw, cx=MX + do_tw + 52, cy=y0 + blk_h // 2,
+                 color=VERMELHO + (175,), n=35, seed=7, max_dist=58)
+        return y0 + blk_h + gap2
+
+    if layout == "vermelho_dominante":
+        y = _full_red_block(y)
+        y = _partial_red_block(y)
+
+    elif layout == "dourado_dominante":
+        vm_tw, vm_th = measure_text(copy["bloco_vermelho"], f_nimbus_r)
+        stamp(draw, copy["bloco_vermelho"], f_nimbus_r, (W - vm_tw) // 2, y,
+              color=VERMELHO, shadow_color=PRETO, offset=3)
+        y += vm_th + gap1
+        y = _partial_gold_block(y)
+
+    elif layout == "minimalista":
+        vm_tw, vm_th = measure_text(copy["bloco_vermelho"], f_nimbus_r)
+        stamp(draw, copy["bloco_vermelho"], f_nimbus_r, (W - vm_tw) // 2, y,
+              color=VERMELHO, shadow_color=PRETO, offset=3)
+        y += vm_th + gap1
+        do_tw, do_th = measure_text(copy["bloco_dourado"], f_nimbus_d)
+        draw.text((MX, y), copy["bloco_dourado"], font=f_nimbus_d, fill=DOURADO)
+        y += do_th + gap2
+
+    else:  # padrao
+        y = _full_red_block(y)
+        y = _partial_gold_block(y)
+
+    return y
+
+
+# ── SECTION 7: FEED COMPOSITOR ───────────────────────────────────────────────
 
 def render_feed(campanha: dict, output_dir: Path) -> Path:
     """Renders the 1080x1080 feed creative. Returns the output Path."""
@@ -303,10 +446,13 @@ def render_feed(campanha: dict, output_dir: Path) -> Path:
     canvas = process_background(campanha["imagem"], W, H)
     draw   = ImageDraw.Draw(canvas)
 
+    _nimbus_path = str(_resolve_font_path("nimbus") or "")
+    _max_w       = W - 2 * MX
+
     f_tag      = load_font("mono_bold",      FONT_SIZES["tag"])
-    f_nimbus1  = load_font("nimbus",         FONT_SIZES["linha1_feed"])
-    f_nimbus_r = load_font("nimbus",         FONT_SIZES["bloco_vm_feed"])
-    f_nimbus_d = load_font("nimbus",         FONT_SIZES["bloco_do_feed"])
+    f_nimbus1  = fit_font(draw, copy["linha1"],           _nimbus_path, FONT_SIZES["linha1_feed"],   _max_w)
+    f_nimbus_r = fit_font(draw, copy["bloco_vermelho"],   _nimbus_path, FONT_SIZES["bloco_vm_feed"], _max_w)
+    f_nimbus_d = fit_font(draw, copy["bloco_dourado"],    _nimbus_path, FONT_SIZES["bloco_do_feed"], _max_w)
     f_corpo    = load_font("poppins_medium", FONT_SIZES["corpo_feed"])
     f_cta      = load_font("mono_bold",      FONT_SIZES["cta_feed"])
     f_wm       = load_font("mono_regular",   FONT_SIZES["watermark"])
@@ -322,42 +468,25 @@ def render_feed(campanha: dict, output_dir: Path) -> Path:
     tag_h = tag_th + 20
     torn_block(draw, MX, y, tag_tw + 32, tag_h, PRETO, seed=2)
     draw.text((MX + 16, y + 10), copy["tag"], font=f_tag, fill=DOURADO)
-    y += tag_h + 28
+    y += tag_h + 40
 
     # [3] linha1
     stamp(draw, copy["linha1"], f_nimbus1, MX, y,
           color=BRANCO_QUENTE, shadow_color=PRETO, offset=4)
     y += measure_text(copy["linha1"], f_nimbus1)[1] + 24
 
-    # [4] bloco_vermelho (full width)
-    vm_tw, vm_th = measure_text(copy["bloco_vermelho"], f_nimbus_r)
-    vm_h = vm_th + 44
-    torn_block(draw, 0, y, W, vm_h, VERMELHO, seed=3)
-    stamp(draw, copy["bloco_vermelho"], f_nimbus_r,
-          (W - vm_tw) // 2, y + 22,
-          color=BRANCO_QUENTE, shadow_color=(120, 10, 10), offset=3)
-    drip(draw, MX,     y, 65, VERMELHO, w=4)
-    drip(draw, W - MX, y, 50, VERMELHO, w=3)
-    splatter(draw, cx=28,     cy=y + vm_h // 2, color=VERMELHO + (175,),
-             n=40, seed=4, max_dist=48)
-    splatter(draw, cx=W - 28, cy=y + vm_h // 2, color=VERMELHO + (175,),
-             n=40, seed=5, max_dist=48)
-    y += vm_h + 20
-
-    # [5] bloco_dourado
-    do_tw, do_th = measure_text(copy["bloco_dourado"], f_nimbus_d)
-    do_h = do_th + 36
-    torn_block(draw, MX, y, do_tw + 52, do_h, DOURADO, seed=6)
-    stamp(draw, copy["bloco_dourado"], f_nimbus_d,
-          MX + 26, y + 18,
-          color=PRETO, shadow_color=(100, 75, 20), offset=2)
-    splatter(draw, cx=MX + do_tw + 52, cy=y + do_h // 2,
-             color=DOURADO + (200,), n=35, seed=7, max_dist=58)
-    y += do_h + 22
+    # [4+5] Layout-specific color blocks
+    y = _draw_color_blocks(draw, copy, campanha.get("layout", "padrao"),
+                           W, MX, y, f_nimbus_r, f_nimbus_d, gap1=20, gap2=22)
 
     # [6] Divider
     draw.rectangle([(MX, y), (W - MX, y + 3)], fill=DIVISOR)
     y += 20
+    # Push corpo to at least 55% of canvas height so content isn't bunched at top
+    y = max(y, int(H * 0.55))
+
+    cta_tw, cta_th = measure_text(copy["cta"], f_cta)
+    cta_h = cta_th + 28
 
     # [7] Corpo
     y = draw_corpo(draw, canvas, copy["corpo"], f_corpo,
@@ -365,19 +494,16 @@ def render_feed(campanha: dict, output_dir: Path) -> Path:
     y += 20
 
     # [8] CTA
-    cta_tw, cta_th = measure_text(copy["cta"], f_cta)
-    cta_h = cta_th + 28
     torn_block(draw, MX, y, cta_tw + 52, cta_h, PRETO, seed=8)
     draw.text((MX + 26, y + 14), copy["cta"], font=f_cta, fill=DOURADO)
-    y += cta_h + 24
 
-    # [9] Watermark
-    wm_text = "@blackline.mkt"
-    wm_tw = measure_text(wm_text, f_wm)[0]
-    draw.text(((W - wm_tw) // 2, y), wm_text, font=f_wm, fill=WATERMARK_COLOR)
-
-    # [10] Black bar 8px
+    # [10] Black bar 8px at absolute bottom
     draw.rectangle([(0, H - 8), (W, H)], fill=PRETO)
+
+    # [9] Watermark — rendered last, anchored to bottom
+    wm_text = "@blackline.mkt"
+    wm_tw, wm_th = measure_text(wm_text, f_wm)
+    draw.text(((W - wm_tw) // 2, H - 32 - wm_th), wm_text, font=f_wm, fill=WATERMARK_COLOR)
 
     out_path = output_dir / f"{campanha['nome']}_feed_1080x1080.png"
     canvas.convert("RGB").save(str(out_path), "PNG")
@@ -397,10 +523,13 @@ def render_story(campanha: dict, output_dir: Path) -> Path:
     canvas = process_background(campanha["imagem"], W, H)
     draw   = ImageDraw.Draw(canvas)
 
+    _nimbus_path = str(_resolve_font_path("nimbus") or "")
+    _max_w       = W - 2 * MX
+
     f_tag      = load_font("mono_bold",      FONT_SIZES["tag"])
-    f_nimbus1  = load_font("nimbus",         FONT_SIZES["linha1_story"])
-    f_nimbus_r = load_font("nimbus",         FONT_SIZES["bloco_vm_story"])
-    f_nimbus_d = load_font("nimbus",         FONT_SIZES["bloco_do_story"])
+    f_nimbus1  = fit_font(draw, copy["linha1"],           _nimbus_path, FONT_SIZES["linha1_story"],   _max_w)
+    f_nimbus_r = fit_font(draw, copy["bloco_vermelho"],   _nimbus_path, FONT_SIZES["bloco_vm_story"], _max_w)
+    f_nimbus_d = fit_font(draw, copy["bloco_dourado"],    _nimbus_path, FONT_SIZES["bloco_do_story"], _max_w)
     f_corpo    = load_font("poppins_medium", FONT_SIZES["corpo_story"])
     f_cta      = load_font("mono_bold",      FONT_SIZES["cta_story"])
     f_wm       = load_font("mono_regular",   FONT_SIZES["watermark"])
@@ -416,42 +545,25 @@ def render_story(campanha: dict, output_dir: Path) -> Path:
     tag_h = tag_th + 20
     torn_block(draw, MX, y, tag_tw + 32, tag_h, PRETO, seed=2)
     draw.text((MX + 16, y + 10), copy["tag"], font=f_tag, fill=DOURADO)
-    y += tag_h + 32
+    y += tag_h + 40
 
     # [3] linha1
     stamp(draw, copy["linha1"], f_nimbus1, MX, y,
           color=BRANCO_QUENTE, shadow_color=PRETO, offset=4)
     y += measure_text(copy["linha1"], f_nimbus1)[1] + 28
 
-    # [4] bloco_vermelho
-    vm_tw, vm_th = measure_text(copy["bloco_vermelho"], f_nimbus_r)
-    vm_h = vm_th + 44
-    torn_block(draw, 0, y, W, vm_h, VERMELHO, seed=3)
-    stamp(draw, copy["bloco_vermelho"], f_nimbus_r,
-          (W - vm_tw) // 2, y + 22,
-          color=BRANCO_QUENTE, shadow_color=(120, 10, 10), offset=3)
-    drip(draw, MX,     y, 65, VERMELHO, w=4)
-    drip(draw, W - MX, y, 50, VERMELHO, w=3)
-    splatter(draw, cx=28,     cy=y + vm_h // 2, color=VERMELHO + (175,),
-             n=40, seed=4, max_dist=48)
-    splatter(draw, cx=W - 28, cy=y + vm_h // 2, color=VERMELHO + (175,),
-             n=40, seed=5, max_dist=48)
-    y += vm_h + 24
-
-    # [5] bloco_dourado
-    do_tw, do_th = measure_text(copy["bloco_dourado"], f_nimbus_d)
-    do_h = do_th + 36
-    torn_block(draw, MX, y, do_tw + 52, do_h, DOURADO, seed=6)
-    stamp(draw, copy["bloco_dourado"], f_nimbus_d,
-          MX + 26, y + 18,
-          color=PRETO, shadow_color=(100, 75, 20), offset=2)
-    splatter(draw, cx=MX + do_tw + 52, cy=y + do_h // 2,
-             color=DOURADO + (200,), n=35, seed=7, max_dist=58)
-    y += do_h + 26
+    # [4+5] Layout-specific color blocks
+    y = _draw_color_blocks(draw, copy, campanha.get("layout", "padrao"),
+                           W, MX, y, f_nimbus_r, f_nimbus_d, gap1=24, gap2=26)
 
     # [6] Divider
     draw.rectangle([(MX, y), (W - MX, y + 3)], fill=DIVISOR)
     y += 22
+    # Push corpo to at least 55% of canvas height so content isn't bunched at top
+    y = max(y, int(H * 0.55))
+
+    cta_tw, cta_th = measure_text(copy["cta"], f_cta)
+    cta_h = cta_th + 28
 
     # [7] Corpo
     y = draw_corpo(draw, canvas, copy["corpo"], f_corpo,
@@ -459,8 +571,6 @@ def render_story(campanha: dict, output_dir: Path) -> Path:
     y += 24
 
     # [8] CTA
-    cta_tw, cta_th = measure_text(copy["cta"], f_cta)
-    cta_h = cta_th + 28
     if y + cta_h > SAFE_BOTTOM:
         print(
             f"AVISO: CTA ultrapassa zona segura ({y + cta_h} > {SAFE_BOTTOM}). "
@@ -469,16 +579,14 @@ def render_story(campanha: dict, output_dir: Path) -> Path:
         )
     torn_block(draw, MX, y, cta_tw + 52, cta_h, PRETO, seed=8)
     draw.text((MX + 26, y + 14), copy["cta"], font=f_cta, fill=DOURADO)
-    y += cta_h + 28
 
-    # [9] Watermark
-    wm_text = "@blackline.mkt"
-    wm_tw = measure_text(wm_text, f_wm)[0]
-    wm_y = max(y + 10, SAFE_BOTTOM + 20)
-    draw.text(((W - wm_tw) // 2, wm_y), wm_text, font=f_wm, fill=WATERMARK_COLOR)
-
-    # [10] Black bar 8px
+    # [10] Black bar 8px at absolute bottom
     draw.rectangle([(0, H - 8), (W, H)], fill=PRETO)
+
+    # [9] Watermark — rendered last, anchored to bottom
+    wm_text = "@blackline.mkt"
+    wm_tw, wm_th = measure_text(wm_text, f_wm)
+    draw.text(((W - wm_tw) // 2, H - 32 - wm_th), wm_text, font=f_wm, fill=WATERMARK_COLOR)
 
     out_path = output_dir / f"{campanha['nome']}_story_1080x1920.png"
     canvas.convert("RGB").save(str(out_path), "PNG")
