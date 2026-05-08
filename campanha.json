@@ -1,0 +1,17 @@
+{
+  "nome": "campanha-exemplo",
+  "imagem": "foto.jpg",
+  "formatos": ["feed", "story"],
+  "copy": {
+    "tag": "BLACK LINE AGENCY // MKTG",
+    "linha1": "NÃO PARA. NÃO DESISTE.",
+    "bloco_vermelho": "TRÁFEGO QUE CONVERTE",
+    "bloco_dourado": "VOCÊ ESTÁ NO LUGAR CERTO",
+    "corpo": [
+      "Estratégia de conteúdo feita para estúdios.",
+      "Mais agendamentos, menos improviso.",
+      "Também cuidamos do seu tráfego pago."
+    ],
+    "cta": "FALE CONOSCO >>"
+  }
+}
